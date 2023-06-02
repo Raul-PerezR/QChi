@@ -18,6 +18,7 @@ struct TestResult
   vector<double> no_cubiertos;
   vector<double> acc;
   vector<double> error_intrinseco_porClase;
+  double S0;
   double acierto_global;
   double acierto_sinNoCubiertos;
   double porcentaje_nuevos_patrones;
@@ -157,8 +158,12 @@ public:
   void CalculoExactoDeAdaptacionesAPatrones(const example_set &E, const VectorVar &V);
   void CalcularPesoYClases(int weightRuleModel, const vector<double> &Cs);
   void Listar_Patrones();
+  void Comparar_Lista_de_Patrones( const unordered_map<string, info> & diccionario2);
+
   pair<string,info> BetterPatron(const vector<string> & listaPatrones);
   pair<string,info> ObtenerPatron(string antecedente);
+
+  unordered_map<string,info>* ExtraerDicionario(){return &diccionario;}
 
 
   int N_Pattern() { return diccionario.size(); }

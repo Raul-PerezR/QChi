@@ -2564,6 +2564,7 @@ vector<vector<double>> CalculoEstimadoSobrePatronesConNEtiquetas(int nlabels, ex
 	for (int par = 0; par < num_par; par++)
 	{
 		Pattern Patrones2(V2);
+		Pattern Patrones3(V2);
 
 		cout << "\n===============\n Ejecucion " << par << "\n===============\n";
 
@@ -2577,6 +2578,7 @@ vector<vector<double>> CalculoEstimadoSobrePatronesConNEtiquetas(int nlabels, ex
 		resultTrain[par].no_cubiertos.clear();
 		resultTrain[par].acc.clear();
 		resultTrain[par].error_intrinseco_porClase.clear();
+		resultTrain[par].S0 = 0;
 
 		for (int i = 0; i < V2.SizeDomain(V2.Consecuente()); i++)
 		{
@@ -2594,6 +2596,12 @@ vector<vector<double>> CalculoEstimadoSobrePatronesConNEtiquetas(int nlabels, ex
 
 		vector<vector<string>> listaDeReglas;
 		unordered_map<string, info> diccionario_reducido;
+
+		/*InputParam.tm = 1;
+		Patrones3.ExtraerPatronesBasicosAproximacionTFMRuben_Veces(E_Par_Completo, V2, resultTrain[par], listaDeReglas, InputParam);
+		Patrones3.CalculoExactoDeAdaptacionesAPatrones(E_Par_Completo, V2);*/
+
+
 
 		switch (InputParam.LM)
 		{
@@ -2671,10 +2679,15 @@ vector<vector<double>> CalculoEstimadoSobrePatronesConNEtiquetas(int nlabels, ex
 			for (int i = 0; i < Cs.size(); i++)
 				Cs[i] = max / Cs[i];
 		}
+		//Patrones3.CalcularPesoYClases(InputParam.w, Cs);
 
 		Patrones2.CalcularPesoYClases(InputParam.w, Cs);
 		fin = clock();
 		timetrain += fin - inicio;
+
+		//Patrones2.Comparar_Lista_de_Patrones((*Patrones3.ExtraerDicionario()));
+		//char ch;
+		//cin >> ch;
 
 		// Patrones2.Listar_Patrones();
 
@@ -2695,6 +2708,7 @@ vector<vector<double>> CalculoEstimadoSobrePatronesConNEtiquetas(int nlabels, ex
 				resultTrain[par].no_cubiertos[i] = 0;
 				resultTrain[par].acc[i] = 0;
 				resultTrain[par].error_intrinseco_porClase[i] = 0;
+				resultTrain[par].S0 = 0;
 			}
 
 			clock_t t_salidas = 0, inicio_trozos = 0;
@@ -2786,6 +2800,7 @@ vector<vector<double>> CalculoEstimadoSobrePatronesConNEtiquetas(int nlabels, ex
 					if (cl == clase)
 					{
 						resultTrain[par].acc[clase]++;
+						resultTrain[par].S0+=i;
 					}
 				}
 			}
@@ -2825,6 +2840,8 @@ vector<vector<double>> CalculoEstimadoSobrePatronesConNEtiquetas(int nlabels, ex
 		resultRecur[par].no_cubiertos.clear();
 		resultRecur[par].acc.clear();
 		resultRecur[par].error_intrinseco_porClase.clear();
+		resultRecur[par].S0 = 0;
+		double no_covers = 0;
 
 		for (int i = 0; i < V.SizeDomain(V.Consecuente()); i++)
 		{
@@ -2928,6 +2945,7 @@ vector<vector<double>> CalculoEstimadoSobrePatronesConNEtiquetas(int nlabels, ex
 				if (cl == -1)
 				{
 					resultRecur[par].no_cubiertos[clase]++;
+					no_covers++;
 				}
 				else
 				{
@@ -2935,6 +2953,9 @@ vector<vector<double>> CalculoEstimadoSobrePatronesConNEtiquetas(int nlabels, ex
 					if (cl == clase)
 					{
 						resultRecur[par].acc[clase]++;
+						resultRecur[par].S0+= (i-no_covers+1);						
+						//cout << "Incremento S0: " << resultRecur[par].S0 << endl;
+
 					}
 				}
 

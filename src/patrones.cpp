@@ -177,7 +177,8 @@ void ProcesarResultados(TestResult &result, ProgramParameters InputParam)
 	result.porcentaje_nuevos_patrones = 0;
 	result.error_intrinseco = 0;
 
-	if (InputParam.acc == 1 and result.acc.size() != 2) InputParam.acc = 2; // GM is considered if AUC is fixed for more than 2 classes.
+	if (InputParam.acc == 1 and result.acc.size() != 2)
+		InputParam.acc = 2; // GM is considered if AUC is fixed for more than 2 classes.
 
 	switch (InputParam.acc)
 	{
@@ -204,13 +205,24 @@ void ProcesarResultados(TestResult &result, ProgramParameters InputParam)
 		result.error_intrinseco = 100.0 - result.acierto_sinNoCubiertos;
 		break;
 	case 1: /* AUC */
-		double TPrate, FPrate, TPrate_sinNC, FPrate_sinNC;
+		double TP, FP, FN, TN;
+		TP = result.acc[0];
+		TN = result.acc[1];
+		FP = result.cubiertos[0] - result.acc[0];
+		FN = result.cubiertos[1] - result.acc[1];
 
-	    TPrate = (1.0*result.acc[0])/(result.cubiertos[0]+result.no_cubiertos[0]);
-		FPrate = (1.0*(result.cubiertos[1]+result.no_cubiertos[1]-result.acc[1]))/(result.cubiertos[1]+result.no_cubiertos[1]);
+		double TPrate, FPrate, Specificity, X, TPrate_sinNC, FPrate_sinNC;
 
-	    TPrate_sinNC = (1.0*result.acc[0])/(result.cubiertos[0]);
-		FPrate_sinNC = (1.0*(result.cubiertos[1]-result.acc[1]))/(result.cubiertos[1]);
+		TPrate = TP / (TP + FN); // Sensibility
+		FPrate = FP / (FP + TN);
+		Specificity = TN / (TN + FP);
+		X = 1 - Specificity;
+
+		// TPrate = (1.0*result.acc[0])/(result.cubiertos[0]+result.no_cubiertos[0]);
+		// FPrate = (1.0*(result.cubiertos[1]+result.no_cubiertos[1]-result.acc[1]))/(result.cubiertos[1]+result.no_cubiertos[1]);
+
+		TPrate_sinNC = (1.0 * result.acc[0]) / (result.cubiertos[0]);
+		FPrate_sinNC = (1.0 * (result.cubiertos[1] - result.acc[1])) / (result.cubiertos[1]);
 
 		for (int i = 0; i < result.acc.size(); i++)
 		{
@@ -220,14 +232,30 @@ void ProcesarResultados(TestResult &result, ProgramParameters InputParam)
 
 		total = total_no_cubiertos + total_cubiertos;
 
+		// result.acierto_sinNoCubiertos = (1.0 + TPrate_sinNC + FPrate_sinNC) / 2;
+		result.acierto_global = (1.0 + TPrate - FPrate) / 2.0;
 
-		result.acierto_sinNoCubiertos = (1.0 + TPrate_sinNC + FPrate_sinNC) / 2;
-		result.acierto_global = (1.0 + TPrate + FPrate) / 2;
-
+		//result.acierto_global = (result.S0 - result.acc[0] * (result.acc[0] + 1) / 2) / (result.acc[0] * result.acc[1]);
+		result.acierto_sinNoCubiertos = result.acierto_global;
 
 		result.error_intrinseco = 1 - result.acierto_sinNoCubiertos;
 
+		/*cout << "TPrate: " << TPrate << "   FPrate: " << FPrate << " TPrate_SNC: " << TPrate_sinNC << "  FPrate_SNC: " << FPrate_sinNC << endl;
+		cout << "Specificity: " << Specificity << "  FPR: " << X << endl;
+		cout << "Acierto_global: " << result.acierto_global << endl;*/
 
+		// Nueva versión basada en el cálculo propuesto en el artículo "Using AUC and Accuracy in Evaluating Learning Algorithms"
+		// AUC = (S0 - n0(n0+1)/2)/n0n1
+
+		//result.acierto_global = (result.S0 - result.acc[0] * (result.acc[0] + 1) / 2) / (result.acc[0] * result.acc[1]);
+
+		/*cout << "S0 = " << result.S0;
+		cout << "  n0 = " << result.acc[0];
+		cout << "  n1 = " << result.acc[1];
+		cout << "  acierto = " << result.acierto_global << endl;*/
+
+		// char ch;
+		// cin >> ch;
 		break;
 
 	case 2: /* GM */
@@ -394,7 +422,7 @@ void PintaResultadosTest(const TestResult &result, bool conClases, ProgramParame
 				}
 				else
 				{
-					cout << "                        Clase " << i << ": " << 1.0 * result.acc[i] / (result.cubiertos[i])  << endl;
+					cout << "                        Clase " << i << ": " << 1.0 * result.acc[i] / (result.cubiertos[i]) << endl;
 				}
 			}
 		}
@@ -447,7 +475,6 @@ void CalcularMediaTestResult(vector<TestResult> lista, TestResult &result, Progr
 	result.acierto_sinNoCubiertos = result.acierto_sinNoCubiertos / lista.size();
 	result.porcentaje_nuevos_patrones = result.porcentaje_nuevos_patrones / lista.size();
 	result.error_intrinseco = result.error_intrinseco / lista.size();
-
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -457,6 +484,7 @@ void CalcularAgregacionResult(vector<TestResult> lista, TestResult &result, Prog
 	result.no_cubiertos.clear();
 	result.acc.clear();
 	result.error_intrinseco_porClase.clear();
+	result.S0 = 0;
 
 	for (int i = 0; i < lista[0].acc.size(); i++)
 	{
@@ -474,6 +502,7 @@ void CalcularAgregacionResult(vector<TestResult> lista, TestResult &result, Prog
 			result.acc[i] += lista[j].acc[i];
 			result.error_intrinseco_porClase[i] += lista[j].error_intrinseco_porClase[i];
 		}
+		result.S0 += lista[j].S0;
 	}
 	// InputParam.acc = 0;
 	ProcesarResultados(result, InputParam);
@@ -489,6 +518,7 @@ void Pattern::ExtraerPatronesBasicos(const example_set &Es, const VectorVar &V, 
 	result.no_cubiertos.clear();
 	result.acc.clear();
 	result.error_intrinseco_porClase.clear();
+	result.S0 = 0;
 
 	for (int i = 0; i < n_clases; i++)
 	{
@@ -1037,6 +1067,7 @@ void Pattern::ExtraerPatronesBasicosAproximacionTFMRuben_Veces(const example_set
 	result.no_cubiertos.clear();
 	result.acc.clear();
 	result.error_intrinseco_porClase.clear();
+	result.S0 = 0;
 
 	for (int i = 0; i < n_clases; i++)
 	{
@@ -1068,7 +1099,7 @@ void Pattern::ExtraerPatronesBasicosAproximacionTFMRuben_Veces(const example_set
 		double portion = porcion / 100.0;
 		clock_t projeccion = 0;
 		double t_uno = 0;
-		if (i> 0)
+		if (i > 0)
 		{
 			t_uno = 1.0 * (step - inicio) / i;
 			projeccion = t_uno * (nex - i);
@@ -1238,6 +1269,7 @@ void Pattern::CalculandoPeso_TFMRuben_Veces(const example_set &E, const VectorVa
 	result.no_cubiertos.clear();
 	result.acc.clear();
 	result.error_intrinseco_porClase.clear();
+	result.S0 = 0;
 
 	for (int i = 0; i < n_clases; i++)
 	{
@@ -1428,6 +1460,7 @@ void Pattern::ExtraerPatronesBasicosAproximacion_Umbral_w_Normalizado(const exam
 	result.no_cubiertos.clear();
 	result.acc.clear();
 	result.error_intrinseco_porClase.clear();
+	result.S0 = 0;
 
 	for (int i = 0; i < n_clases; i++)
 	{
@@ -1454,7 +1487,7 @@ void Pattern::ExtraerPatronesBasicosAproximacion_Umbral_w_Normalizado(const exam
 		double portion = porcion / 100.0;
 		clock_t projeccion = 0;
 		double t_uno = 0;
-		if (i> 0)
+		if (i > 0)
 		{
 			t_uno = 1.0 * (step - inicio) / i;
 			projeccion = t_uno * (nex - i);
@@ -1623,6 +1656,7 @@ void Pattern::ExtraerPatronesBasicosAproximacionTFMRuben_Umbral(const example_se
 	result.no_cubiertos.clear();
 	result.acc.clear();
 	result.error_intrinseco_porClase.clear();
+	result.S0 = 0;
 
 	for (int i = 0; i < n_clases; i++)
 	{
@@ -1649,7 +1683,7 @@ void Pattern::ExtraerPatronesBasicosAproximacionTFMRuben_Umbral(const example_se
 		double portion = porcion / 100.0;
 		clock_t projeccion = 0;
 		double t_uno = 0;
-		if (i> 0)
+		if (i > 0)
 		{
 			t_uno = 1.0 * (step - inicio) / i;
 			projeccion = t_uno * (nex - i);
@@ -1806,6 +1840,7 @@ void Pattern::ExtraerPatronesBasicosAproximacionTFMRuben_DHamming(const example_
 	result.no_cubiertos.clear();
 	result.acc.clear();
 	result.error_intrinseco_porClase.clear();
+	result.S0 = 0;
 
 	for (int i = 0; i < n_clases; i++)
 	{
@@ -1832,7 +1867,7 @@ void Pattern::ExtraerPatronesBasicosAproximacionTFMRuben_DHamming(const example_
 		double portion = porcion / 100.0;
 		clock_t projeccion = 0;
 		double t_uno = 0;
-		if (i> 0)
+		if (i > 0)
 		{
 			t_uno = 1.0 * (step - inicio) / i;
 			projeccion = t_uno * (nex - i);
@@ -1988,6 +2023,7 @@ void Pattern::ExtraerPatronesBasicosAproximacionMixed_Umbral_Norm_and_hamming(co
 	result.no_cubiertos.clear();
 	result.acc.clear();
 	result.error_intrinseco_porClase.clear();
+	result.S0 = 0;
 
 	for (int i = 0; i < n_clases; i++)
 	{
@@ -2015,7 +2051,7 @@ void Pattern::ExtraerPatronesBasicosAproximacionMixed_Umbral_Norm_and_hamming(co
 		double portion = porcion / 100.0;
 		clock_t projeccion = 0;
 		double t_uno = 0;
-		if (i> 0)
+		if (i > 0)
 		{
 			t_uno = 1.0 * (step - inicio) / i;
 			projeccion = t_uno * (nex - i);
@@ -2761,6 +2797,7 @@ void Pattern::TestearRecursivo(const example_set &Es, const VectorVar &V, TestRe
 	result.no_cubiertos.clear();
 	result.acc.clear();
 	result.error_intrinseco_porClase.clear();
+	result.S0 = 0;
 
 	for (int i = 0; i < n_clases; i++)
 	{
@@ -2794,6 +2831,7 @@ void Pattern::TestearRecursivo(const example_set &Es, const VectorVar &V, TestRe
 		if (clase_predicha == clase_real)
 		{
 			result.acc[clase_real]++;
+			result.S0 += i;
 			aciertos++;
 		}
 		if (clase_predicha == -1)
@@ -2950,6 +2988,7 @@ void Pattern::TestearPatronesBasicos(const example_set &Es, const VectorVar &V, 
 			}
 			if (mayor == clase)
 				result.acc[mayor]++;
+			result.S0 += i;
 		}
 		else
 		{
@@ -3010,7 +3049,6 @@ int Pattern::TestearUnEjemploPatronesBasicos(const example_set &Es, int eje, con
 
 	return result;
 }
-
 
 //-----------------------------------------------------------------------------------------------------
 void Pattern::TestearPatronesBasicosClassic(const example_set &Es, const VectorVar &V, TestResult &result, ProgramParameters InputParam)
@@ -3128,6 +3166,7 @@ void Pattern::TestearPatronesBasicosClassic(const example_set &Es, const VectorV
 			if (cl == clase)
 			{
 				result.acc[clase]++;
+				result.S0 += i;
 			}
 		}
 	}
@@ -3270,6 +3309,7 @@ void Pattern::TestearPatronesBasicosClassicDisparos(const example_set &Es, const
 			if (cl == clase)
 			{
 				result.acc[clase]++;
+				result.S0 += i;
 			}
 		}
 	}
@@ -3349,6 +3389,40 @@ void Pattern::Listar_Patrones()
 	}
 }
 
+void Pattern::Comparar_Lista_de_Patrones(const unordered_map<string, info> &diccionario2)
+{
+	int one = 0, five = 0, ten = 0, casos = 0, distintos = 0;
+	double onePercent, fivePercent, tenPercent;
+	for (auto it = diccionario.begin(); it != diccionario.end(); it++)
+	{
+		auto it2 = diccionario2.find(it->first);
+		if (it2 != diccionario2.end())
+		{
+			onePercent = it2->second.weight / 100;
+			fivePercent = 5 * onePercent;
+			tenPercent = 10 * onePercent;
+			casos++;
+			if (it->second.clase != it2->second.clase)
+				distintos++;
+			else
+			{
+				if (abs(it->second.weight - it2->second.weight) < onePercent)
+					one++;
+				if (abs(it->second.weight - it2->second.weight) < fivePercent)
+					five++;
+				if (abs(it->second.weight - it2->second.weight) < tenPercent)
+					ten++;
+			}
+		}
+	}
+	ofstream f("comparativaPeso.csv", ios_base::app);
+	f << "one= " << one << " (" << 1.0 * one / casos << ") "
+	  << "five= " << five << " (" << 1.0 * five / casos << ") "
+	  << "ten= " << ten << " (" << 1.0 * ten / casos << ") "
+	  << "distintos= " << distintos << " (" << 1.0 * distintos / casos << ")" << endl;
+	f.close();
+}
+
 void Pattern::CalculoExactoDeAdaptacionesAPatrones(const example_set &E, const VectorVar &V)
 {
 	cout << "Exhaustive method for obtaining the weights.....\n\n";
@@ -3374,7 +3448,7 @@ void Pattern::CalculoExactoDeAdaptacionesAPatrones(const example_set &E, const V
 		double portion = porcion / 100.0;
 		clock_t projeccion = 0;
 		double t_uno = 0;
-		if (i> 0)
+		if (i > 0)
 		{
 			t_uno = 1.0 * (step - inicio) / i;
 			projeccion = t_uno * (nex - i);
@@ -3539,18 +3613,18 @@ void Pattern::CalcularPesoYClases(int weightRuleModel, const vector<double> &Cs)
 		{
 			auxC = 0;
 			sum = 0;
-			sum = it->second.conseq[0]*Cs[0];
+			sum = it->second.conseq[0] * Cs[0];
 			for (int i = 1; i < n_clases; i++)
 			{
-				sum += it->second.conseq[i]*Cs[i];
-				if ((it->second.conseq[i]*Cs[i]) > it->second.conseq[auxC]*Cs[auxC])
+				sum += it->second.conseq[i] * Cs[i];
+				if ((it->second.conseq[i] * Cs[i]) > it->second.conseq[auxC] * Cs[auxC])
 				{
 					auxC = i;
 				}
 			}
 
 			auto para_eliminar = it;
-			double temp = (it->second.conseq[auxC]*Cs[auxC] - (sum - (it->second.conseq[auxC]*Cs[auxC]))) / sum;
+			double temp = (it->second.conseq[auxC] * Cs[auxC] - (sum - (it->second.conseq[auxC] * Cs[auxC]))) / sum;
 			it++;
 
 			if (temp > 0)
