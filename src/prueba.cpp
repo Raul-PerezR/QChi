@@ -3619,7 +3619,7 @@ int main(int argc, char *argv[])
 	// for (int j=0; j<salida.size(); j++){
 	for (int j = 0; j < 1; j++)
 	{
-		lineaSalida = seedfich + " " + to_string(numLabel) + " " + to_string(num_variables_continuas) + " Global";
+		lineaSalida = seedfich + " " + to_string(InputParam.nLab) + " " + to_string(num_variables_continuas) + " Global";
 		for (int i = 0; i < salida[j].size(); i++)
 		{
 			lineaSalida += " " + to_string(salida[j][i]);
