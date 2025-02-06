@@ -34,9 +34,8 @@ Learning Parameters:
 * `-ld <num>` being `<num>` the value of the maximum hamming distance permitted. By default, ld = 0
 * `-size <num>` or `-sz <num>` establishes the maximum number of rules in the final rule set. 0 meaning not limited. By default, size = 0
 * `-NotInferenceTraining` or `-Nit` does not apply real inference on training set (it is an estimation obtained from the learning process). By default not included
-* `-weightCalculateProcess` or `-wCP` (by default is off, that is, it is calculated by quick new version)
+* `-weightCalculateProcess` or `-wCP` (by default is `off`, that is, it is calculated by quick new version. When `on` QChi is converted in WM algorithm)
 * `-NormalizedMu` uses the normalized adaptation degrees (by default the normalization is not used).
-* `-weightCalculateProcess <num>` or `-wCP <num>` activate exhaustive traditional computation for obtaining the weight of the rule.
 * `-allContinuous` actived considers all variables (nominals included) like continuous (by default this parameter is false)
 * `-weightRuleModel <num>` or `-w <num>` define how rule's weight is calculated by the QChi algorithm:
 * * `0` All rules with weight = 1
